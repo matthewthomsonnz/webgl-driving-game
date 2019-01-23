@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webvr - roller coaster</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<link rel="stylesheet" href="style.css">
+	</head>
+	<body>
+		<script src="three.js"></script>
+		<script src="OBJLoader.js"></script>
+		<script>
+			var renderer = new THREE.WebGLRenderer( { antialias: true } ),
+			camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1500 ),
+			scene = new THREE.Scene();
+
+			scene.background = new THREE.Color( 0xf0f0ff );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			var manager = new THREE.LoadingManager( loadModels ),
+			textureLoader = new THREE.TextureLoader( manager ),
+			texture = textureLoader.load( 'UV_Grid_Sm.jpg' , function(texture){
+				texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+				texture.offset.set( 0, 0 );
+				texture.repeat.set( 16, 16 );
+			}),
+
+			loader = new THREE.OBJLoader( manager );
+			loader.load( './car.obj', function ( obj ) { playerOneCar = obj; });
+			loader.load( './track.obj', function ( obj ) { track = obj; });
+			const cube = new THREE.Mesh(
+			new THREE.BoxGeometry(2552.5, 2.5, 2552.5)
+			);
+			cube.material.transparent=true;
+			cube.material.opacity=0.7;
+			cube.material.map = texture;
+			scene.add(cube)
+			cube.position.set(0,50,0)
+
+
+			function loadModels() {
+				playerOneCar.traverse( function ( child ) {
+					if ( child.isMesh ) child.material.map = texture;
+
+					scene.add(playerOneCar)
+				} );
+				track.traverse( function ( child ) {
+					if ( child.isMesh ) {
+						child.material.map = texture;
+						child.material.transparent=true;
+						child.material.opacity=0.8;
+					}
+
+					scene.add(track)
+					track.position.set(50,0,160)
+					track.scale.set(25,25,25);
+				} );
+				renderer.setAnimationLoop( render );
+			}
+
+			var velocityX, velocityZ;
+
+			var reboundX = 0, reboundZ = 0;
+
+			var velocity = {
+				current: 0
+			}
+			
+
+			
+
+			var sphere = new THREE.SphereBufferGeometry( 0.5, 116, 8 );
+			// scene.add(sphere)
+			// sphere.position.set(531, 1, 1 );
+			//lights
+
+			light1 = new THREE.PointLight( 0xffffff,2.4, 2155 );
+			light1.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffffff } ) ) );
+			scene.add( light1 );
+			light1.position.set(-0,1222,1220)
+			
+			light2 = new THREE.PointLight( 0xffffff,1.2, 2155 );
+			light2.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x0040ff } ) ) );
+			scene.add( light2 );
+			light2.position.set(-1344,-44,-344)
+
+			light3 = new THREE.PointLight( 0xffffff,1.2, 2155 );
+			light3.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x0040ff } ) ) );
+			scene.add( light3 );
+			light3.position.set(1344,-44,-344)
+			// light3 = new THREE.PointLight( 0x80ff80,0.5, 550 );
+			// light3.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x80ff80 } ) ) );
+			// scene.add( light3 );
+			// light3.position.set(0,111,-255)
+			// light4 = new THREE.PointLight( 0xffaa00,0.5, 550 );
+			// light4.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) ) );
+			// scene.add( light4 );
+			// light4.position.set(255,111,0)
+			var light = new THREE.HemisphereLight( 0xfff0f0, 0x606066, 0.2 );
+			light.position.set( 1, 1, 1 );
+			scene.add( light );
+
+			function Player(xCoord, yCoord, zCoord, rotation) {
+				this.x = xCoord;
+				this.y = yCoord;
+				this.z = zCoord;
+				this.rotation = rotation;
+			}
+
+			var p1 = new Player(0, 10, 0, 0);
+			
+			var keyDown = {
+				w:false,
+				a:false,
+				s:false,
+				d:false
+			}
+
+			var rayCast = {
+				rays : {
+					frontL:[0, 10, 0, -20, function(hitCoord){
+							if (hitCoord > 6) {
+								velocity.current = velocity.current/1.45
+								p1.rotation--
+								p1.rotation--
+								p1.rotation--
+								p1.rotation--
+							} else if (hitCoord < 4 && p1.y > -743) {
+
+							}
+						}
+					],
+					frontR:[12,10,0,20,function(hitCoord){
+							if (hitCoord > 6) {
+								velocity.current = velocity.current/1.45
+								p1.rotation++
+								p1.rotation++
+								p1.rotation++
+								p1.rotation++
+							}
+						}
+					],
+					rearL:[0,10,12,200,function(){}],
+					rearR:[12,10,12,160,function(){}]
+				},
+				makeRays: function() {
+					Object.entries(this.rays).forEach(function(entry) {
+						var cast = new THREE.Raycaster();
+						cast.ray.origin.set(entry[1][0],entry[1][1]+10,entry[1][2]);
+						cast.ray.direction.set( 0, - 1, 0 );
+						var hit = cast.intersectObject(track, true);
+						entry[1][0] = p1.x + 14 * Math.cos(toRadians(entry[1][3]-p1.rotation));
+						entry[1][2] = p1.z + 14 * Math.sin(toRadians(entry[1][3]-p1.rotation));
+						if(hit[0] != undefined) {
+							var hitCoord = hit[ 0 ].point.y;
+							entry[1][4](hitCoord)
+						} else if (p1.y > -720) {
+							p1.y--
+							p1.y--
+						}
+						
+					});
+				}
+			}
+
+			
+
+function render() {
+
+	if (keyDown.w == true) {
+		velocity.current += 0.01
+	}
+	if (keyDown.a == true && velocity.current > 0.1 ) {
+		p1.rotation++
+	}
+	if (keyDown.s == true) {
+			velocity.current += -0.05
+	}
+	if (keyDown.d == true && velocity.current > 0.1) {
+		p1.rotation--
+	}
+	if (velocity.current > 0 && keyDown.w != true) {
+		velocity.current += -0.05
+	}
+	light1.position.set(p1.x,1722,p1.z)
+	velocityX = p1.x + (velocity.current + reboundX) * Math.cos(toRadians(-0-p1.rotation));
+	velocityZ = p1.z + (velocity.current + reboundZ) * Math.sin(toRadians(-0-p1.rotation));
+	p1.x=velocityX
+	p1.z=velocityZ
+	playerOneCar.rotation.y = toRadians(p1.rotation);
+	playerOneCar.position.set(p1.x, p1.y, p1.z)
+	rayCast.makeRays()
+
+	camera.lookAt(p1.x,p1.y,p1.z);
+	camera.position.set(p1.x+140,p1.y+440,p1.z);
+	renderer.render( scene, camera );
+}
+
+function toRadians (angle) {
+	return angle * (Math.PI / 180);
+}
+
+window.addEventListener( 'resize', function() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}, false );
+
+document.addEventListener("keyup", key)
+document.addEventListener("keydown", key)
+
+function key(event) {
+	let down;
+	event.type == "keydown" ? down = true : down = false;
+	switch (event.key) {
+	case "w":
+		keyDown.w = down;
+		break;
+	case "a":
+		keyDown.a = down;
+		break;
+	case "s":
+		keyDown.s = down;
+		break;
+	case "d":
+		keyDown.d = down;
+	}
+}
+
+
+</script>
+</body>
+</html>
