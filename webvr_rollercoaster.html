@@ -29,7 +29,7 @@
 			loader.load( './car.obj', function ( obj ) { playerOneCar = obj; });
 			loader.load( './track.obj', function ( obj ) { track = obj; });
 			const cube = new THREE.Mesh(
-			new THREE.BoxGeometry(2552.5, 2.5, 2552.5)
+			new THREE.BoxGeometry(12552.5, 2.5, 12552.5)
 			);
 			cube.material.transparent=true;
 			cube.material.opacity=0.9;
@@ -60,23 +60,17 @@
 			}
 
 			var sphere = new THREE.SphereBufferGeometry( 0.5, 116, 8 );
-			// scene.add(sphere)
-			// sphere.position.set(531, 1, 1 );
-			//lights
 
-			light1 = new THREE.PointLight( 0xffffff,2.4, 2155 );
+
+			light1 = new THREE.PointLight( 0xffffff,1, 5155 );
 			light1.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffffff } ) ) );
 			scene.add( light1 );
-			light1.position.set(-0,1222,1220)
+			light1.position.set(1440,1222,0)
+			light2 = new THREE.PointLight( 0xffffff,1, 6155 );
+			light2.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffffff } ) ) );
+			scene.add( light2 );
+			light2.position.set(-540,1222,440)
 
-			// light3 = new THREE.PointLight( 0x80ff80,0.5, 550 );
-			// light3.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x80ff80 } ) ) );
-			// scene.add( light3 );
-			// light3.position.set(0,111,-255)
-			// light4 = new THREE.PointLight( 0xffaa00,0.5, 550 );
-			// light4.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) ) );
-			// scene.add( light4 );
-			// light4.position.set(255,111,0)
 			var light = new THREE.HemisphereLight( 0xfff0f0, 0x606066, 0.2 );
 			light.position.set( 1, 1, 1 );
 			scene.add( light );
@@ -182,7 +176,7 @@ function render() {
 	}
 
 
-	light1.position.set(p1.x,1722,p1.z)
+
 	velocityX = p1.x + (velocity.current + reboundX) * Math.cos(toRadians(-0-p1.rotation));
 	velocityZ = p1.z + (velocity.current + reboundZ) * Math.sin(toRadians(-0-p1.rotation));
 	p1.x=velocityX
