@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>three.js webvr - roller coaster</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-		<link rel="stylesheet" href="style.css">
+		<title>Basic WebGl Demo - MT</title>
+		<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	</head>
 	<body>
 		<script src="three.js"></script>
@@ -34,27 +32,20 @@
 			new THREE.BoxGeometry(2552.5, 2.5, 2552.5)
 			);
 			cube.material.transparent=true;
-			cube.material.opacity=0.7;
+			cube.material.opacity=0.9;
 			cube.material.map = texture;
+			cube.material.color.setHex( 0x0000ff );
 			scene.add(cube)
-			cube.position.set(0,50,0)
-
+			cube.position.set(0,-650,0)
 
 			function loadModels() {
 				playerOneCar.traverse( function ( child ) {
-					if ( child.isMesh ) child.material.map = texture;
-
+					if ( child.isMesh ) child.material.color.setHex( 0xff0000 );
 					scene.add(playerOneCar)
 				} );
 				track.traverse( function ( child ) {
-					if ( child.isMesh ) {
-						child.material.map = texture;
-						child.material.transparent=true;
-						child.material.opacity=0.8;
-					}
-
 					scene.add(track)
-					track.position.set(50,0,160)
+					track.position.set(50,540,-1160)
 					track.scale.set(25,25,25);
 				} );
 				renderer.setAnimationLoop( render );
@@ -67,9 +58,6 @@
 			var velocity = {
 				current: 0
 			}
-			
-
-			
 
 			var sphere = new THREE.SphereBufferGeometry( 0.5, 116, 8 );
 			// scene.add(sphere)
@@ -80,16 +68,7 @@
 			light1.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffffff } ) ) );
 			scene.add( light1 );
 			light1.position.set(-0,1222,1220)
-			
-			light2 = new THREE.PointLight( 0xffffff,1.2, 2155 );
-			light2.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x0040ff } ) ) );
-			scene.add( light2 );
-			light2.position.set(-1344,-44,-344)
 
-			light3 = new THREE.PointLight( 0xffffff,1.2, 2155 );
-			light3.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x0040ff } ) ) );
-			scene.add( light3 );
-			light3.position.set(1344,-44,-344)
 			// light3 = new THREE.PointLight( 0x80ff80,0.5, 550 );
 			// light3.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x80ff80 } ) ) );
 			// scene.add( light3 );
@@ -109,7 +88,7 @@
 				this.rotation = rotation;
 			}
 
-			var p1 = new Player(0, 10, 0, 0);
+			var p1 = new Player(220, 0,150, 180);
 			
 			var keyDown = {
 				w:false,
@@ -121,8 +100,8 @@
 			var rayCast = {
 				rays : {
 					frontL:[0, 10, 0, -20, function(hitCoord){
-							if (hitCoord > 6) {
-								velocity.current = velocity.current/1.45
+							if (hitCoord > 854) {
+								velocity.current = velocity.current/1.35
 								p1.rotation--
 								p1.rotation--
 								p1.rotation--
@@ -133,8 +112,8 @@
 						}
 					],
 					frontR:[12,10,0,20,function(hitCoord){
-							if (hitCoord > 6) {
-								velocity.current = velocity.current/1.45
+							if (hitCoord > 854) {
+								velocity.current = velocity.current/1.35
 								p1.rotation++
 								p1.rotation++
 								p1.rotation++
@@ -142,48 +121,67 @@
 							}
 						}
 					],
-					rearL:[0,10,12,200,function(){}],
-					rearR:[12,10,12,160,function(){}]
+					rearL:[0,10,12,200,function(hitCoord){
+						if (hitCoord > 854) {
+							velocity.current = velocity.current/1.1
+							p1.rotation--
+
+						}
+					}],
+					rearR:[12,10,12,160,function(hitCoord){
+						if (hitCoord > 854) {
+							velocity.current = velocity.current/1.1
+							p1.rotation++
+
+						}
+					}]
 				},
 				makeRays: function() {
+					var count = 0;
 					Object.entries(this.rays).forEach(function(entry) {
 						var cast = new THREE.Raycaster();
-						cast.ray.origin.set(entry[1][0],entry[1][1]+10,entry[1][2]);
+						cast.ray.origin.set(entry[1][0],entry[1][1]+1110,entry[1][2]);
 						cast.ray.direction.set( 0, - 1, 0 );
 						var hit = cast.intersectObject(track, true);
 						entry[1][0] = p1.x + 14 * Math.cos(toRadians(entry[1][3]-p1.rotation));
 						entry[1][2] = p1.z + 14 * Math.sin(toRadians(entry[1][3]-p1.rotation));
 						if(hit[0] != undefined) {
 							var hitCoord = hit[ 0 ].point.y;
+							if(entry[0]=="frontR")
 							entry[1][4](hitCoord)
-						} else if (p1.y > -720) {
-							p1.y--
-							p1.y--
+						} else {
+							count++
+							
 						}
 						
 					});
+					console.log(p1.y)
+					if (count == 4 && p1.y > -720 ||  p1.y < -10 && p1.y > -720){p1.y += -5}
 				}
 			}
 
-			
-
 function render() {
-
 	if (keyDown.w == true) {
-		velocity.current += 0.01
+		velocity.current += 0.02
 	}
-	if (keyDown.a == true && velocity.current > 0.1 ) {
+	if (keyDown.a == true && velocity.current > 0.1 || keyDown.d == true && velocity.current < -0.1 ) {
 		p1.rotation++
 	}
 	if (keyDown.s == true) {
-			velocity.current += -0.05
+		velocity.current += -0.025
 	}
-	if (keyDown.d == true && velocity.current > 0.1) {
+	if (keyDown.d == true && velocity.current > 0.1 || keyDown.a == true && velocity.current < -0.1) {
 		p1.rotation--
 	}
+
 	if (velocity.current > 0 && keyDown.w != true) {
-		velocity.current += -0.05
+		velocity.current += -0.02
 	}
+	if (velocity.current < 0) {
+		velocity.current += 0.02
+	}
+
+
 	light1.position.set(p1.x,1722,p1.z)
 	velocityX = p1.x + (velocity.current + reboundX) * Math.cos(toRadians(-0-p1.rotation));
 	velocityZ = p1.z + (velocity.current + reboundZ) * Math.sin(toRadians(-0-p1.rotation));
@@ -202,15 +200,6 @@ function toRadians (angle) {
 	return angle * (Math.PI / 180);
 }
 
-window.addEventListener( 'resize', function() {
-	camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
-	renderer.setSize( window.innerWidth, window.innerHeight );
-}, false );
-
-document.addEventListener("keyup", key)
-document.addEventListener("keydown", key)
-
 function key(event) {
 	let down;
 	event.type == "keydown" ? down = true : down = false;
@@ -228,8 +217,14 @@ function key(event) {
 		keyDown.d = down;
 	}
 }
+document.addEventListener("keyup", key);
+document.addEventListener("keydown", key);
 
-
+window.addEventListener( 'resize', function() {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+	}, false );
 </script>
 </body>
 </html>
