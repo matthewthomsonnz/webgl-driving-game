@@ -8,6 +8,8 @@
 		<script src="three.js"></script>
 		<script src="OBJLoader.js"></script>
 		<script>
+			var iteration;
+
 			var renderer = new THREE.WebGLRenderer( { antialias: true } ),
 			camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1500 ),
 			scene = new THREE.Scene();
@@ -31,6 +33,35 @@
 			const cube = new THREE.Mesh(
 			new THREE.BoxGeometry(12552.5, 2.5, 12552.5)
 			);
+
+			var loader = new THREE.FontLoader();
+			var countdown;
+			var iteration = 4;
+			function readySetGo(){
+			loader.load( 'helvetiker_regular.typeface.json', function ( font ) {
+				scene.remove( countdown );
+				iteration == 1 ? iteration = "GO!": iteration--;
+				iteration == -1 ? iteration = "":null;
+				var geometry = new THREE.TextGeometry( iteration.toString(), {
+					font: font,
+					size: 80,
+					height: 5,
+					curveSegments: 12,
+					bevelEnabled: true,
+					bevelThickness: 10,
+					bevelSize: 8,
+					bevelSegments: 5
+				} );
+				var textMaterial = new THREE.MeshPhongMaterial( 
+					{ color: 0xff0000, specular: 0xffffff }
+				);
+				countdown = new THREE.Mesh( geometry, textMaterial );
+				scene.add( countdown );
+				countdown.position.set(150,0,0)
+				
+			} );
+		}
+			
 			cube.material.transparent=true;
 			cube.material.opacity=0.9;
 			cube.material.map = texture;
@@ -49,6 +80,7 @@
 					track.scale.set(25,25,25);
 				} );
 				renderer.setAnimationLoop( render );
+				countdown321();
 			}
 
 			var velocityX, velocityZ;
@@ -80,9 +112,10 @@
 				this.y = yCoord;
 				this.z = zCoord;
 				this.rotation = rotation;
+				this.chase = false;
 			}
 
-			var p1 = new Player(220, 0,150, 180);
+			var p1 = new Player(220, -75,150, 180);
 			
 			var keyDown = {
 				w:false,
@@ -119,7 +152,6 @@
 						if (hitCoord > 854) {
 							velocity.current = velocity.current/1.1
 							p1.rotation--
-
 						}
 					}],
 					rearR:[12,10,12,160,function(hitCoord){
@@ -145,16 +177,34 @@
 							entry[1][4](hitCoord)
 						} else {
 							count++
-							
 						}
 						
 					});
-					console.log(p1.y)
-					if (count == 4 && p1.y > -720 ||  p1.y < -10 && p1.y > -720){p1.y += -5}
+
+					if (count == 4 && p1.y > -720 ||  p1.y < -90 && p1.y > -720){
+						p1.y += -5
+					}
 				}
 			}
 
 function render() {
+	
+
+	velocityX = p1.x + (velocity.current + reboundX) * Math.cos(toRadians(-0-p1.rotation));
+	velocityZ = p1.z + (velocity.current + reboundZ) * Math.sin(toRadians(-0-p1.rotation));
+	p1.x=velocityX
+	p1.z=velocityZ
+	playerOneCar.rotation.y = toRadians(p1.rotation);
+	playerOneCar.position.set(p1.x, p1.y, p1.z)
+	rayCast.makeRays()
+
+	
+	
+
+	p1.chase ? (function(){playerOneCar.add(camera);camera.position.set(p1.x+80,p1.y+140,p1.z)})() : camera.position.set(p1.x+140,p1.y+440,p1.z);
+	camera.lookAt(p1.x,p1.y,p1.z);
+	renderer.render( scene, camera );
+	if (Number.isInteger(iteration)) return;
 	if (keyDown.w == true) {
 		velocity.current += 0.02
 	}
@@ -175,19 +225,6 @@ function render() {
 		velocity.current += 0.02
 	}
 
-
-
-	velocityX = p1.x + (velocity.current + reboundX) * Math.cos(toRadians(-0-p1.rotation));
-	velocityZ = p1.z + (velocity.current + reboundZ) * Math.sin(toRadians(-0-p1.rotation));
-	p1.x=velocityX
-	p1.z=velocityZ
-	playerOneCar.rotation.y = toRadians(p1.rotation);
-	playerOneCar.position.set(p1.x, p1.y, p1.z)
-	rayCast.makeRays()
-
-	camera.lookAt(p1.x,p1.y,p1.z);
-	camera.position.set(p1.x+140,p1.y+440,p1.z);
-	renderer.render( scene, camera );
 }
 
 function toRadians (angle) {
@@ -209,6 +246,10 @@ function key(event) {
 		break;
 	case "d":
 		keyDown.d = down;
+		break;dd
+	case "c":
+		if (!down) p1.chase ? p1.chase=false : p1.chase=true;
+		
 	}
 }
 document.addEventListener("keyup", key);
@@ -219,6 +260,28 @@ window.addEventListener( 'resize', function() {
 		camera.updateProjectionMatrix();
 		renderer.setSize( window.innerWidth, window.innerHeight );
 	}, false );
+
+
+
+
+	// countdown retry set to start from three
+	
+
+	// fire myTimer every second
+	var oneSecondInterval;
+	function countdown321() {
+		oneSecondInterval = setInterval(function(){ myTimer() }, 1000);
+	}
+	// hide preloader, start from 3, countdown one each time, show preloader, reset timer, re-run AJAX
+	function myTimer() {
+	console.log(iteration)
+	readySetGo()
+	if (iteration == "GO!") {
+		iteration = ""
+		clearInterval(oneSecondInterval);
+		
+	}
+	}
 </script>
 </body>
 </html>
