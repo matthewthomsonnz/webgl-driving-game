@@ -8,13 +8,11 @@
 		<script src="three.js"></script>
 		<script src="OBJLoader.js"></script>
 		<script>
-			var iteration;
-
 			var renderer = new THREE.WebGLRenderer( { antialias: true } ),
 			camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1500 ),
 			scene = new THREE.Scene();
 
-			scene.background = new THREE.Color( 0xf0f0ff );
+			scene.background = new THREE.Color( 0x3fb8ff );
 			renderer.setPixelRatio( window.devicePixelRatio );
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
@@ -33,38 +31,51 @@
 			const cube = new THREE.Mesh(
 			new THREE.BoxGeometry(12552.5, 2.5, 12552.5)
 			);
+			var geometry = new THREE.CylinderGeometry( 2, 2, 15 , 16 );
+			var material = new THREE.MeshBasicMaterial( {color: 0x000} );
+			var rearTire = new THREE.Mesh( geometry, material );
 
+			var geometry = new THREE.CylinderGeometry( 2, 2, 15 , 16 );
+			var material = new THREE.MeshBasicMaterial( {color: 0x000} );
+			var frontTire = new THREE.Mesh( geometry, material );
+			
+			
 			var loader = new THREE.FontLoader();
 			var countdown;
 			var iteration = 4;
 			function readySetGo(){
 			loader.load( 'helvetiker_regular.typeface.json', function ( font ) {
 				scene.remove( countdown );
-				iteration == 1 ? iteration = "GO!": iteration--;
-				iteration == -1 ? iteration = "":null;
+
+				if (iteration == 1) iteration = "GO!"
+				if (iteration == -1) iteration = ""
+				if (Number.isInteger(iteration)) iteration--
+
 				var geometry = new THREE.TextGeometry( iteration.toString(), {
 					font: font,
-					size: 80,
-					height: 5,
+					size: 20,
+					height: 1,
 					curveSegments: 12,
 					bevelEnabled: true,
-					bevelThickness: 10,
-					bevelSize: 8,
-					bevelSegments: 5
+					bevelThickness: 1,
+					bevelSize: 1,
+					bevelSegments: 1
 				} );
+				THREE.GeometryUtils.center( geometry );
 				var textMaterial = new THREE.MeshPhongMaterial( 
-					{ color: 0xff0000, specular: 0xffffff }
+					{ color: 0xffff00, specular: 0xffffff }
 				);
 				countdown = new THREE.Mesh( geometry, textMaterial );
 				scene.add( countdown );
-				countdown.position.set(150,0,0)
-				
+				countdown.position.set(150, 5,165)
+				countdown.rotation.y = toRadians(90)
 			} );
 		}
 			
 			cube.material.transparent=true;
 			cube.material.opacity=0.9;
 			cube.material.map = texture;
+			
 			cube.material.color.setHex( 0x0000ff );
 			scene.add(cube)
 			cube.position.set(0,-650,0)
@@ -74,6 +85,16 @@
 					if ( child.isMesh ) child.material.color.setHex( 0xff0000 );
 					scene.add(playerOneCar)
 				} );
+
+				rearTire.rotation.x = toRadians(90)
+				rearTire.position.set(-9,1.5,0.3)
+				playerOneCar.add( rearTire );
+
+				frontTire.rotation.x = toRadians(90)
+				frontTire.position.set(7,1.5,0.3)
+				playerOneCar.add( frontTire );
+
+
 				track.traverse( function ( child ) {
 					scene.add(track)
 					track.position.set(50,540,-1160)
@@ -111,11 +132,13 @@
 				this.x = xCoord;
 				this.y = yCoord;
 				this.z = zCoord;
+				this.lap = 1;
 				this.rotation = rotation;
 				this.chase = false;
+				this.checkpoint = false;
 			}
 
-			var p1 = new Player(220, -75,150, 180);
+			var p1 = new Player(220, -76,163, 180);
 			
 			var keyDown = {
 				w:false,
@@ -181,8 +204,10 @@
 						
 					});
 
-					if (count == 4 && p1.y > -720 ||  p1.y < -90 && p1.y > -720){
-						p1.y += -5
+					if (count == 4 && p1.y > -780 ||  p1.y < -90 && p1.y > -780){
+						p1.y += -5;
+						p1.chase=false;
+						
 					}
 				}
 			}
@@ -196,34 +221,37 @@ function render() {
 	p1.z=velocityZ
 	playerOneCar.rotation.y = toRadians(p1.rotation);
 	playerOneCar.position.set(p1.x, p1.y, p1.z)
+
+
+
+	Number.isInteger(iteration) && countdown ? countdown.position.y--  : null
+
+	if (p1.chase) {playerOneCar.add( camera );camera.lookAt(p1.x,p1.y+20,p1.z);} else {playerOneCar.remove( camera );camera.position.set(p1.x+200,p1.y+400,p1.z); camera.lookAt(p1.x,p1.y+20,p1.z);}
 	rayCast.makeRays()
-
-	
-	
-
-	p1.chase ? (function(){playerOneCar.add(camera);camera.position.set(p1.x+80,p1.y+140,p1.z)})() : camera.position.set(p1.x+140,p1.y+440,p1.z);
-	camera.lookAt(p1.x,p1.y,p1.z);
 	renderer.render( scene, camera );
 	if (Number.isInteger(iteration)) return;
 	if (keyDown.w == true) {
 		velocity.current += 0.02
 	}
+	console.log(p1.y)
 	if (keyDown.a == true && velocity.current > 0.1 || keyDown.d == true && velocity.current < -0.1 ) {
 		p1.rotation++
 	}
 	if (keyDown.s == true) {
-		velocity.current += -0.025
+		velocity.current += -0.1
 	}
 	if (keyDown.d == true && velocity.current > 0.1 || keyDown.a == true && velocity.current < -0.1) {
 		p1.rotation--
 	}
 
 	if (velocity.current > 0 && keyDown.w != true) {
+		
 		velocity.current += -0.02
 	}
 	if (velocity.current < 0) {
 		velocity.current += 0.02
 	}
+
 
 }
 
@@ -235,20 +263,22 @@ function key(event) {
 	let down;
 	event.type == "keydown" ? down = true : down = false;
 	switch (event.key) {
-	case "w":
-		keyDown.w = down;
-		break;
-	case "a":
-		keyDown.a = down;
-		break;
-	case "s":
-		keyDown.s = down;
-		break;
-	case "d":
-		keyDown.d = down;
-		break;dd
-	case "c":
-		if (!down) p1.chase ? p1.chase=false : p1.chase=true;
+		case "W": case "w": 
+			keyDown.w = down;
+			break;
+		case "A": case "a": 
+			keyDown.a = down;
+			break;
+		case "S": case "s": 
+			keyDown.s = down;
+			break;
+		case "D": case "d": 
+			keyDown.d = down;
+			break;
+		case "C": case "c":
+			if (!down) {
+				if (p1.chase) {p1.chase=false;} else {p1.chase=true;camera.position.set(-100,20,0);} 
+			}
 		
 	}
 }
@@ -263,25 +293,24 @@ window.addEventListener( 'resize', function() {
 
 
 
-
-	// countdown retry set to start from three
-	
-
-	// fire myTimer every second
 	var oneSecondInterval;
 	function countdown321() {
 		oneSecondInterval = setInterval(function(){ myTimer() }, 1000);
 	}
-	// hide preloader, start from 3, countdown one each time, show preloader, reset timer, re-run AJAX
+	
 	function myTimer() {
-	console.log(iteration)
+
 	readySetGo()
 	if (iteration == "GO!") {
-		iteration = ""
+
+		iteration = "";
 		clearInterval(oneSecondInterval);
 		
 	}
 	}
+
+
+
 </script>
 </body>
 </html>
