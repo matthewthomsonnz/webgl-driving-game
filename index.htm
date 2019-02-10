@@ -5,8 +5,8 @@
 		<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	</head>
 	<body>
-		<script src="three.js"></script>
-		<script src="OBJLoader.js"></script>
+		<script src="./js/three.js"></script>
+		<script src="./js/OBJLoader.js"></script>
 		<script>
 			let setup = {
 				renderer : new THREE.WebGLRenderer( { antialias: true } ),
@@ -21,14 +21,12 @@
 			setup.renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( setup.renderer.domElement );
 
-			var sphere = new THREE.SphereBufferGeometry( 0.5, 116, 8 );
 			let lights = [
 				new THREE.PointLight( 0xffffff,1, 5155 ),
 				new THREE.PointLight( 0xffffff,1, 6155 ),
 				new THREE.HemisphereLight( 0xfff0f0, 0x606066, 0.2 )
-				]
-
-			lights.forEach((light) => {
+			]
+			.forEach((light) => {
 				light.add();
 				light.position.set(1440,1222,0);
 				setup.scene.add(light);
@@ -37,7 +35,6 @@
 			// lights[0].position.set(1440,1222,0)
 			// lights[1].position.set(-540,1222,440)
 			// lights[2].position.set( 1, 1, 1 );
-
 
 			let make = {
 				objects: {
@@ -79,7 +76,7 @@
 				playerOneCar.traverse( function ( child ) {
 					if ( child.isMesh ) child.material.color.setHex( 0xff0000 );
 					setup.scene.add(playerOneCar)
-				} );
+				});
 
 				rearTire.rotation.x = toRadians(90)
 				rearTire.position.set(-9,1.5,0.3)
@@ -93,7 +90,8 @@
 					setup.scene.add(track)
 					track.position.set(50,540,-1160)
 					track.scale.set(25,25,25);
-				} );
+				});
+
 				setup.renderer.setAnimationLoop( render );
 				countdown321();
 			}
@@ -117,29 +115,29 @@
 
 			var p1 = new Player(220, -76,163, 180);
 
-			var rayCast = {
-				rays : {
-					frontL:[0, 10, 0, -20],
-					frontR:[12,10,0,20],
-					rearL:[0,10,12,200],
-					rearR:[12,10,12,160]
-				},
-				makeRays: function() {
-					var count = 0;
-					Object.entries(this.rays).forEach(function(entry) {
-						var cast = new THREE.Raycaster();
-						cast.ray.origin.set(entry[1][0],entry[1][1]+1110,entry[1][2]);
-						cast.ray.direction.set( 0, - 1, 0 );
-						var hit = cast.intersectObject(track, true);
-						entry[1][0] = p1.x + 14 * Math.cos(toRadians(entry[1][3]-p1.rotation));
-						entry[1][2] = p1.z + 14 * Math.sin(toRadians(entry[1][3]-p1.rotation));
-						if(hit[0] == undefined) count++
-					});
-					if (count == 4 && p1.y > -780 ||  p1.y < -90 && p1.y > -780){
-						p1.y += -5;
-					}
-				}
+	var rayCast = {
+		rays : {
+			frontL:[0, 10, 0, -20],
+			frontR:[12,10,0,20],
+			rearL:[0,10,12,200],
+			rearR:[12,10,12,160]
+		},
+		makeRays: function() {
+			var count = 0;
+			Object.entries(this.rays).forEach(function(entry) {
+				var cast = new THREE.Raycaster();
+				cast.ray.origin.set(entry[1][0],entry[1][1]+1110,entry[1][2]);
+				cast.ray.direction.set( 0, - 1, 0 );
+				var hit = cast.intersectObject(track, true);
+				entry[1][0] = p1.x + 14 * Math.cos(toRadians(entry[1][3]-p1.rotation));
+				entry[1][2] = p1.z + 14 * Math.sin(toRadians(entry[1][3]-p1.rotation));
+				if(hit[0] == undefined) count++
+			});
+			if (count == 4 && p1.y > -780 ||  p1.y < -90 && p1.y > -780){
+				p1.y += -5;
 			}
+		}
+	}
 
 function render() {
 	p1.x += (p1.velocity) * Math.cos(toRadians(-p1.rotation));
@@ -190,13 +188,6 @@ function key(event) {
 	document.addEventListener("keyup", key);
 	document.addEventListener("keydown", key);
 
-	window.addEventListener( 'resize', function() {
-		setup.camera.aspect = window.innerWidth / window.innerHeight;
-		setup.camera.updateProjectionMatrix();
-		renderer.setSize( window.innerWidth, window.innerHeight );
-	}, false );
-
-
 var oneSecondInterval;
 function countdown321() {
 oneSecondInterval = setInterval(function(){ myTimer() }, 1000);
@@ -215,7 +206,7 @@ clearInterval(oneSecondInterval);
 }
 }
 function readySetGo(){
-loader.load( 'helvetiker_regular.typeface.json', function ( font ) {
+loader.load( 'font.json', function ( font ) {
 counting()
 var geometry = new THREE.TextGeometry( iteration.toString(), {
 font: font,
