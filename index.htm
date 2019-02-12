@@ -5,8 +5,8 @@
 		<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	</head>
 	<body>
-		<script src="./js/three.js"></script>
-		<script src="./js/OBJLoader.js"></script>
+		<script src="./lib/three.js"></script>
+		<script src="./lib/OBJLoader.js"></script>
 		<script>
 			let setup = {
 				renderer : new THREE.WebGLRenderer( { antialias: true } ),
@@ -51,15 +51,15 @@
 					}
 				}
 			}
-			var texture = setup.textureLoader.load( 'water.jpg' , function(texture){
+			var texture = setup.textureLoader.load( './assets/water.jpg' , function(texture){
 				texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 				texture.offset.set( 0, 0 );
 				texture.repeat.set( 16, 16 );
 			});
 
 			loader = new THREE.OBJLoader( setup.manager );
-			loader.load( './car.obj', function ( obj ) { playerOneCar = obj; });
-			loader.load( './track.obj', function ( obj ) { track = obj; });
+			loader.load( './assets/car.obj', function ( obj ) { playerOneCar = obj; });
+			loader.load( './assets/track.obj', function ( obj ) { track = obj; });
 
 			var geometry = new THREE.CylinderGeometry( 2, 2, 15 , 16 );
 			var material = new THREE.MeshBasicMaterial( {color: 0x000} );
@@ -93,7 +93,7 @@
 				});
 
 				setup.renderer.setAnimationLoop( render );
-				countdown321();
+			
 			}
 
 			function Player(xCoord, yCoord, zCoord, rotation) {
@@ -149,8 +149,6 @@ function render() {
 	if (p1.chaseCamera) {playerOneCar.add( setup.camera );setup.camera.lookAt(p1.x,p1.y+20,p1.z);}
 	else {playerOneCar.remove( setup.camera );setup.camera.position.set(p1.x+200,p1.y+400,p1.z); setup.camera.lookAt(p1.x,p1.y+20,p1.z);}
 
-	if (Number.isInteger(iteration) && countdown) countdown.position.y--
-	if (Number.isInteger(iteration)) return;
 	if (p1.keyDown.w == true) p1.velocity += 0.02
 	if (p1.keyDown.s == true) p1.velocity += -0.1
 	if (p1.keyDown.a == true && p1.velocity > 0.1 || p1.keyDown.d == true && p1.velocity < -0.1 ) p1.rotation++
@@ -188,41 +186,33 @@ function key(event) {
 	document.addEventListener("keyup", key);
 	document.addEventListener("keydown", key);
 
-var oneSecondInterval;
-function countdown321() {
-oneSecondInterval = setInterval(function(){ myTimer() }, 1000);
-}
-let counting = function() {
-setup.scene.remove( countdown );
-if (iteration == 1) iteration = "GO!"
-if (iteration == -1) iteration = ""
-if (Number.isInteger(iteration)) iteration--
-}
-function myTimer() {
-readySetGo()
-if (iteration == "GO!") {
-iteration = "";
-clearInterval(oneSecondInterval);
-}
-}
-function readySetGo(){
-loader.load( 'font.json', function ( font ) {
-counting()
-var geometry = new THREE.TextGeometry( iteration.toString(), {
-font: font,
-size: 20,
-height: 3
-} );
-THREE.GeometryUtils.center( geometry );
+
+setTimeout(() => setup.scene.remove( countdown ), 8000)
+
+
+
+loader.load( './assets/font.json', function ( font ) {
+
+const settings = { font: font, size: 20, height: 3 }
+var move = new THREE.TextGeometry( "wasd to move",  settings);
+var camera = new THREE.TextGeometry( "wasd to move",  settings);
+
 var textMaterial = new THREE.MeshPhongMaterial( 
 { color: 0xffff00, specular: 0xffffff }
 );
+
 countdown = new THREE.Mesh( geometry, textMaterial );
 setup.scene.add( countdown );
 countdown.position.set(150, 5,165)
 countdown.rotation.y = toRadians(90)
+geometry.parameters.text = "c to change camera"
+countdown2 = new THREE.Mesh( geometry, textMaterial );
+setup.scene.add( countdown2 );
+countdown2.position.set(150, 5,165)
+countdown2.rotation.y = toRadians(90)
+
 } );
-}
+
 </script>
 </body>
 </html>
