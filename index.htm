@@ -2,101 +2,16 @@
 <html lang="en">
 	<head>
 		<title>Basic WebGl Demo - MT</title>
-		<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+      * { margin: 0; overflow: hidden; }
+    </style>
 	</head>
 	<body>
 		<script src="./lib/three.js"></script>
 		<script src="./lib/OBJLoader.js"></script>
 		<script>
-			let setup = {
-				renderer : new THREE.WebGLRenderer( { antialias: true } ),
-				scene : new THREE.Scene(),
-				camera : new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1500 ),
-				manager : new THREE.LoadingManager( loadModels ),
-				textureLoader : new THREE.TextureLoader( this.manager )
-			}
-
-			setup.scene.background = new THREE.Color( 0x3fb8ff );
-			setup.renderer.setPixelRatio( window.devicePixelRatio );
-			setup.renderer.setSize( window.innerWidth, window.innerHeight );
-			document.body.appendChild( setup.renderer.domElement );
-
-			let lights = [
-				new THREE.PointLight( 0xffffff,1, 5155 ),
-				new THREE.PointLight( 0xffffff,1, 6155 ),
-				new THREE.HemisphereLight( 0xfff0f0, 0x606066, 0.2 )
-			]
-			.forEach((light) => {
-				light.add();
-				light.position.set(1440,1222,0);
-				setup.scene.add(light);
-			})
-
-			// lights[0].position.set(1440,1222,0)
-			// lights[1].position.set(-540,1222,440)
-			// lights[2].position.set( 1, 1, 1 );
-
-			let make = {
-				objects: {
-					water: function () {
-						const cube = new THREE.Mesh(
-							new THREE.BoxGeometry(12552.5, 2.5, 12552.5)
-						);
-						cube.material.transparent=true;
-						cube.material.opacity=0.9;
-						cube.material.map = texture;
-						cube.material.color.setHex( 0x0000ff );
-						cube.position.set(0,-650,0)
-						setup.scene.add(cube)
-					}
-				}
-			}
-			var texture = setup.textureLoader.load( './assets/water.jpg' , function(texture){
-				texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-				texture.offset.set( 0, 0 );
-				texture.repeat.set( 16, 16 );
-			});
-
-			loader = new THREE.OBJLoader( setup.manager );
-			loader.load( './assets/car.obj', function ( obj ) { playerOneCar = obj; });
-			loader.load( './assets/track.obj', function ( obj ) { track = obj; });
-
-			var geometry = new THREE.CylinderGeometry( 2, 2, 15 , 16 );
-			var material = new THREE.MeshBasicMaterial( {color: 0x000} );
-			var rearTire = new THREE.Mesh( geometry, material );
-			var frontTire = new THREE.Mesh( geometry, material );
-			
-			make.objects.water();
-
-			var loader = new THREE.FontLoader();
-			var countdown;
-			var iteration = 4;
-
-			function loadModels() {
-				playerOneCar.traverse( function ( child ) {
-					if ( child.isMesh ) child.material.color.setHex( 0xff0000 );
-					setup.scene.add(playerOneCar)
-				});
-
-				rearTire.rotation.x = toRadians(90)
-				rearTire.position.set(-9,1.5,0.3)
-				playerOneCar.add( rearTire );
-
-				frontTire.rotation.x = toRadians(90)
-				frontTire.position.set(7,1.5,0.3)
-				playerOneCar.add( frontTire );
-
-				track.traverse( function ( child ) {
-					setup.scene.add(track)
-					track.position.set(50,540,-1160)
-					track.scale.set(25,25,25);
-				});
-
-				setup.renderer.setAnimationLoop( render );
-			
-			}
-
-			function Player(xCoord, yCoord, zCoord, rotation) {
+      function Player(xCoord, yCoord, zCoord, rotation) {
 				this.x = xCoord;
 				this.y = yCoord;
 				this.z = zCoord;
@@ -110,109 +25,155 @@
 					a:false,
 					s:false,
 					d:false
-				}
-			}
+				};
+				this.rayPositions = {
+					frontL:[0,10,0,-20],
+					frontR:[12,10,0,20],
+					rearL:[0,10,12,200],
+					rearR:[12,10,12,160]
+				};
+				this.model = {
+					carModel:null
+				};
+				this.makeHitRays = function() {
+					let count = 0;
+					Object.entries(this.rayPositions).forEach(function(entry) {
+						let cast = new THREE.Raycaster();
+						cast.ray.origin.set(entry[1][0],entry[1][1]+1110,entry[1][2]);
+						cast.ray.direction.set( 0, - 1, 0 );
+						let hit = cast.intersectObject(gameEnvironment.track, true);
+						entry[1][0] = p1.x + 14 * Math.cos(toRadians(entry[1][3]-p1.rotation));
+						entry[1][2] = p1.z + 14 * Math.sin(toRadians(entry[1][3]-p1.rotation));
+						if(hit[0] == undefined) count++
+					});
+					if (count == 4 && p1.y > -780 || p1.y < -90 && p1.y > -780){
+						p1.y += -5;
+					}
+				};
+				this.positionCalculations = () => {
+					this.x += (this.velocity) * Math.cos(toRadians(-this.rotation));
+					this.z += (this.velocity) * Math.sin(toRadians(-this.rotation));
+					if (this.keyDown.w == true) this.velocity += 0.02;
+					if (this.keyDown.s == true && this.velocity > -1) this.velocity += -0.01;
+					if (this.keyDown.a == true && this.velocity > 0.1 || this.keyDown.d == true && this.velocity < -0.1 ) this.rotation++;
+					if (this.keyDown.d == true && this.velocity > 0.1 || this.keyDown.a == true && this.velocity < -0.1) this.rotation--;
+					if (this.velocity > 0 && this.keyDown.w != true) this.velocity += -0.04;
+				};
+			};
 
-			var p1 = new Player(220, -76,163, 180);
+			let p1 = new Player(220, -76,163, 180);
 
-	var rayCast = {
-		rays : {
-			frontL:[0, 10, 0, -20],
-			frontR:[12,10,0,20],
-			rearL:[0,10,12,200],
-			rearR:[12,10,12,160]
-		},
-		makeRays: function() {
-			var count = 0;
-			Object.entries(this.rays).forEach(function(entry) {
-				var cast = new THREE.Raycaster();
-				cast.ray.origin.set(entry[1][0],entry[1][1]+1110,entry[1][2]);
-				cast.ray.direction.set( 0, - 1, 0 );
-				var hit = cast.intersectObject(track, true);
-				entry[1][0] = p1.x + 14 * Math.cos(toRadians(entry[1][3]-p1.rotation));
-				entry[1][2] = p1.z + 14 * Math.sin(toRadians(entry[1][3]-p1.rotation));
-				if(hit[0] == undefined) count++
-			});
-			if (count == 4 && p1.y > -780 ||  p1.y < -90 && p1.y > -780){
-				p1.y += -5;
-			}
-		}
-	}
+      let loader  = new THREE.LoadingManager(()=>{
+        gameEnvironment.track.traverse( function ( child ) {
+          gameEnvironment.scene.add(gameEnvironment.track);
+          gameEnvironment.track.position.set(50,540,-1160);
+          gameEnvironment.track.scale.set(25,25,25);
+        });
+        p1.model.carModel.traverse( function ( child ) {
+          if ( child.isMesh ) child.material.color.setHex( 0xff0000 );
+          gameEnvironment.scene.add(p1.model.carModel);
+        });
+        p1.model.carModel.add( gameEnvironment.frontWheel);
+        p1.model.carModel.add( gameEnvironment.rearWheel );
+        gameEnvironment.renderer.setAnimationLoop( render );
+      });
+      
+      let gameEnvironment = {
+        textureLoader : new THREE.TextureLoader( loader ),
+        camera : new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1500 ),
+        scene : new THREE.Scene(),
+				renderer : new THREE.WebGLRenderer( { antialias: true } ),
+        loader : new THREE.OBJLoader( loader ),
+        geometry : new THREE.CylinderGeometry( 2, 2, 15 , 16 ),
+			  material : new THREE.MeshBasicMaterial( {color: 0x000} ),
+        lights: [
+          [new THREE.PointLight( 0xffffff,1, 5155 ),[1440,1222,0]],
+          [new THREE.PointLight( 0xffffff,1, 6155 ),[-540,1222,440]],
+          [new THREE.HemisphereLight( 0xfff0f0, 0x606066, 0.2 ),[1,1,1]]
+        ],
+        setup: function () {
+					this.waterInstance = new THREE.Mesh(new THREE.BoxGeometry(12552.5, 2.5, 12552.5));
+          this.waterInstance.position.set(0,-650,0);
+          this.waterInstance.material.transparent=true;
+          this.waterInstance.material.opacity=0.9;
+          this.waterInstance.material.color.setHex( 0x0000ff );
+          this.waterInstance.material.map = this.textureLoader.load( 'water.jpg' , texture => {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+            texture.offset.set( 0, 0 );
+            texture.repeat.set( 16, 16 );
+          });
+          this.scene.add(this.waterInstance);
+          this.scene.background = new THREE.Color( 0x3fb8ff );
+          this.rearWheel = new THREE.Mesh( this.geometry, this.material );
+          this.rearWheel.rotation.x = toRadians(90);
+          this.rearWheel.position.set(-9,1.5,0.3);
+			    this.frontWheel = new THREE.Mesh( this.geometry, this.material );
+          this.frontWheel.rotation.x = toRadians(90);
+          this.frontWheel.position.set(7,1.5,0.3);
+          this.lights.forEach((light) => {
+            light[0].position.set(light[1][0],light[1][1],light[1][2]);
+            this.scene.add(light[0]);
+          });
+          this.loader.load( './car.obj', obj => p1.model.carModel = obj);
+		  	  this.loader.load( './track.obj', obj => this.track = obj);
+          this.renderer.setPixelRatio( window.devicePixelRatio );
+          this.renderer.setSize( window.innerWidth, window.innerHeight );
+          document.body.appendChild( this.renderer.domElement );
+        },
+			};
 
-function render() {
-	p1.x += (p1.velocity) * Math.cos(toRadians(-p1.rotation));
-	p1.z += (p1.velocity) * Math.sin(toRadians(-p1.rotation));
-	playerOneCar.rotation.y = toRadians(p1.rotation);
-	playerOneCar.position.set(p1.x, p1.y, p1.z)
-	rayCast.makeRays()
-	setup.renderer.render( setup.scene, setup.camera );
-	if (p1.chaseCamera) {playerOneCar.add( setup.camera );setup.camera.lookAt(p1.x,p1.y+20,p1.z);}
-	else {playerOneCar.remove( setup.camera );setup.camera.position.set(p1.x+200,p1.y+400,p1.z); setup.camera.lookAt(p1.x,p1.y+20,p1.z);}
+      gameEnvironment.setup();
 
-	if (p1.keyDown.w == true) p1.velocity += 0.02
-	if (p1.keyDown.s == true) p1.velocity += -0.1
-	if (p1.keyDown.a == true && p1.velocity > 0.1 || p1.keyDown.d == true && p1.velocity < -0.1 ) p1.rotation++
-	if (p1.keyDown.d == true && p1.velocity > 0.1 || p1.keyDown.a == true && p1.velocity < -0.1) p1.rotation--
-	if (p1.velocity > 0 && p1.keyDown.w != true) p1.velocity += -0.02
-	if (p1.velocity < 0) p1.velocity += 0.02
-}
+      function render() {
+        p1.model.carModel.rotation.y = toRadians(p1.rotation);
+        p1.model.carModel.position.set(p1.x, p1.y, p1.z);
+        p1.makeHitRays();
+        p1.positionCalculations();
+        if (p1.chaseCamera) {
+          p1.model.carModel.add( gameEnvironment.camera );
+          gameEnvironment.camera.lookAt(p1.x,p1.y+20,p1.z);
+        } else {
+          p1.model.carModel.remove( gameEnvironment.camera );
+          gameEnvironment.camera.position.set(p1.x+200,p1.y+400,p1.z);
+          gameEnvironment.camera.lookAt(p1.x,p1.y+20,p1.z);
+        }
+        gameEnvironment.renderer.render( gameEnvironment.scene, gameEnvironment.camera );
+      }
 
-function toRadians (angle) {
-	return angle * (Math.PI / 180);
-}
+      function key(event) {
+        let down;
+        event.type == "keydown" ? down = true : down = false;
+        switch (event.key) {
+          case "W":case "w": 
+            p1.keyDown.w = down;
+            break;
+          case "A":case "a": 
+            p1.keyDown.a = down;
+            break;
+          case "S":case "s": 
+            p1.keyDown.s = down;
+            break;
+          case "D":case "d": 
+            p1.keyDown.d = down;
+            break;
+          case "C":case "c":
+            if (!down) {
+              if (p1.chaseCamera) {
+                p1.chaseCamera = false;
+              } else {
+                p1.chaseCamera = true;
+                gameEnvironment.camera.position.set(-100,20,0);
+              } 
+            }
+        }
+      }
 
-function key(event) {
-	let down;
-	event.type == "keydown" ? down = true : down = false;
-	switch (event.key) {
-		case "W": case "w": 
-			p1.keyDown.w = down;
-			break;
-		case "A": case "a": 
-			p1.keyDown.a = down;
-			break;
-		case "S": case "s": 
-			p1.keyDown.s = down;
-			break;
-		case "D": case "d": 
-			p1.keyDown.d = down;
-			break;
-		case "C": case "c":
-			if (!down) {
-				if (p1.chaseCamera) {p1.chaseCamera=false;} else {p1.chaseCamera=true;setup.camera.position.set(-100,20,0);} 
-			}
-	}
-}
-	document.addEventListener("keyup", key);
-	document.addEventListener("keydown", key);
+      function toRadians (angle) {
+        return angle * (Math.PI / 180);
+      }
 
-
-setTimeout(() => setup.scene.remove( countdown ), 8000)
-
-
-
-loader.load( './assets/font.json', function ( font ) {
-
-const settings = { font: font, size: 20, height: 3 }
-var move = new THREE.TextGeometry( "wasd to move",  settings);
-var camera = new THREE.TextGeometry( "wasd to move",  settings);
-
-var textMaterial = new THREE.MeshPhongMaterial( 
-{ color: 0xffff00, specular: 0xffffff }
-);
-
-countdown = new THREE.Mesh( geometry, textMaterial );
-setup.scene.add( countdown );
-countdown.position.set(150, 5,165)
-countdown.rotation.y = toRadians(90)
-geometry.parameters.text = "c to change camera"
-countdown2 = new THREE.Mesh( geometry, textMaterial );
-setup.scene.add( countdown2 );
-countdown2.position.set(150, 5,165)
-countdown2.rotation.y = toRadians(90)
-
-} );
-
-</script>
+      document.addEventListener("keyup", key);
+      document.addEventListener("keydown", key);
+  </script>
 </body>
 </html>
